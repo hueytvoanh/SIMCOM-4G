@@ -107,7 +107,22 @@
 #define SMS_IN_NONE           0
 #define SMS_IN_INFOR          1
 
-#define AUTHOR_TEST
+//#define DEBUG
+#define DEBUG_GSM
+#define GSM_SMS_ERROR
+#define GSM_FUNCTION
+#define SMS_WARNING
+#define WARN_AC
+#define WARN_ACQ
+#define WARN_DOOR
+//#define WARN_TEMP
+#define MQTT_FUNCTION
+
+//#define AUTHOR_TEST
+//#define ACCOUNT_ADMIN
+#define ACCOUNT_CM1
+#define MQTT_STATE_ERROR
+
 
 #ifdef AUTHOR_TEST
 const String myphone="0945818332";
@@ -168,22 +183,7 @@ char smsWarning;
 #define SYS_SMS_INFOR_OUT_SENDING           35
 
 #define SERIAL_CHECK_MS                     20000   // 20 ms
-
-//#define DEBUG
-#define DEBUG_GSM
-#define GSM_SMS_ERROR
-#define GSM_FUNCTION
-#define SMS_WARNING
-#define WARN_AC
-#define WARN_ACQ
-//#define WARN_DOOR
-//#define WARN_TEMP
-
-#define MQTT_FUNCTION
-
-#define ACCOUNT_ADMIN
-//#define ACCOUNT_CM1
-#define MQTT_STATE_ERROR 
+ 
 
 volatile int systemState;
 int mqttConnectRetryNumber, mqttUploadRetryNumber;
@@ -1261,13 +1261,18 @@ void getSensorValue(void){
   acqValue = (readInput(ACQ_SOURCE))*0.09 + 0.36;
   currentValue = (readInput(CURRENT_SOURCE))*0.1345 - 1.8;   
   calFre();
-  int doorValue = readInput(INPUT_DOOR);
 
-  if(readInput(INPUT_DOOR) == HIGH){
+  if(digitalRead(INPUT_DOOR) == LOW){
       doorState = false;
+      //for(int i = 0; i < 80; i++){
+      //    displayLed7(11.11, ACQ_SOURCE);
+      //}
   }
   else{
       doorState = true;
+      //for(int i = 0; i < 80; i++){
+      //    displayLed7(22.22, ACQ_SOURCE);
+      //}
   }
 
   if(acqState == true){
@@ -2189,5 +2194,4 @@ void loop() {
   serialEvent();
   checkBuff();
   #endif
-
 }
