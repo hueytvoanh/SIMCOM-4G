@@ -118,9 +118,9 @@
 //#define WARN_TEMP
 #define MQTT_FUNCTION
 
-//#define AUTHOR_TEST
-//#define ACCOUNT_ADMIN
-#define ACCOUNT_CM1
+#define AUTHOR_TEST
+#define ACCOUNT_ADMIN
+//#define ACCOUNT_CM1
 #define MQTT_STATE_ERROR
 
 
@@ -1380,6 +1380,7 @@ void outSigControl(){
 
 int checkInputButtons(){   
     char acq_H_value, acq_L_value, temp_H_value, temp_L_value;
+    int setupCount;
 
     if(digitalRead(MENU_BUTTON)==LOW){
         for(int i = 0; i < LED7_CONFIG_BEGIN; i++){
@@ -1387,6 +1388,7 @@ int checkInputButtons(){
         }
         setUpState = SETUP_ACQ_LOW;
     }
+    setupCount = 0;
 
    while( setUpState != SETUP_NONE){
     
@@ -1484,7 +1486,10 @@ int checkInputButtons(){
             break;
         
     }
-
+    setupCount++;
+    if(setupCount == 200){
+        break;  
+    }
    }
 }
 
