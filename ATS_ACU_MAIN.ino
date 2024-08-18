@@ -196,7 +196,7 @@ unsigned long currentTime, lastSendingTime, start2Running, end2Running, lastUplo
 
 boolean uploadTimeCheck;
 
-int count_a, count_b;
+int count_a, count_b, setupCount;
 
 static int networkError = 0;
 
@@ -1380,15 +1380,14 @@ void outSigControl(){
 
 int checkInputButtons(){   
     char acq_H_value, acq_L_value, temp_H_value, temp_L_value;
-    int setupCount;
 
     if(digitalRead(MENU_BUTTON)==LOW){
         for(int i = 0; i < LED7_CONFIG_BEGIN; i++){
              displayLed7(vAcq_L_Config, LED7_ACQ_L);  
         }
         setUpState = SETUP_ACQ_LOW;
+        setupCount = 0;
     }
-    setupCount = 0;
 
    while( setUpState != SETUP_NONE){
     
@@ -1487,7 +1486,8 @@ int checkInputButtons(){
         
     }
     setupCount++;
-    if(setupCount == 200){
+    if(setupCount >= 400){
+        setUpState = SETUP_NONE;
         break;  
     }
    }
@@ -2151,6 +2151,7 @@ void setup() {
   mainState = true;
   mainStateLast = true;
   pulsecount = 0;
+  setupCount = 0;
 
   #ifdef AUTHOR_TEST
   vinaNetwork = false;
