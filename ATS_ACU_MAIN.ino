@@ -84,7 +84,7 @@
 #define DOOR_OPEN             HIGH
 #define DOOR_CLOSE            LOW
 
-
+#define ACQ_ERRR_VALUE        1        
 #define V_TH_G                120
 #define V_TH_M                120
 #define A_TH                  864
@@ -1328,7 +1328,7 @@ void getSensorValue(void){
       }
   }
   else{
-      if((acqValue <= (vAcq_H_Config-2))&&(acqValue >= (vAcq_L_Config+2))){
+      if((acqValue <= (vAcq_H_Config-ACQ_ERRR_VALUE))&&(acqValue >= (vAcq_L_Config+ACQ_ERRR_VALUE))){
           acqState = true;
       }
   }
