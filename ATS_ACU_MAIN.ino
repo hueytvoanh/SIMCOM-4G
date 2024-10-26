@@ -70,8 +70,8 @@
 #define RELAY_DEACTIVE        LOW
 #define LOAD_ACTIVE           HIGH
 #define LOAD_DEACTIVE         LOW
-#define SIG_ACTIVE            HIGH
-#define SIG_DEACTIVE          LOW
+#define SIG_ACTIVE            LOW
+#define SIG_DEACTIVE          HIGH
 
 #define SETUP_NONE            0
 #define SETUP_ACQ_HIGH        1
@@ -181,6 +181,10 @@ char smsWarning;
 
 #define SYS_SMS_INFOR_OUT                   34
 #define SYS_SMS_INFOR_OUT_SENDING           35
+#define SYS_SMS_PHONE2_ADDED                36
+#define SYS_SMS_PHONE2_ADDED_SENDING        37
+#define SYS_SMS_PHONE3_ADDED                38
+#define SYS_SMS_PHONE3_ADDED_SENDING        39
 
 #define SERIAL_CHECK_MS                     20000   // 20 ms
  
@@ -272,8 +276,8 @@ const char string_0[SMSLENGTH] PROGMEM = "START";
     const char string_1[SMSLENGTH] PROGMEM = "Canh bao. Mat dien luoi \n";
     const char string_2[SMSLENGTH] PROGMEM = "Vbat||Ddien||Tmp||AC \n" 
                                              "15.5||15.5||55.5||NOK||DOOR ----- \n";
-    const char string_3[SMSLENGTH] PROGMEM = "Co lai dien luoi \n";
-    const char string_4[SMSLENGTH] PROGMEM = "MPhat De NOK Tat NOK.Tg=xx.xxx";
+    const char string_3[SMSLENGTH] PROGMEM = "ADDED PHONE2 \n";
+    const char string_4[SMSLENGTH] PROGMEM = "ADDED PHONE3 \n";
     const char string_5[SMSLENGTH] PROGMEM = "Tat MPhat NOK.Tg=xx.xxx";
     const char string_6[SMSLENGTH] PROGMEM = "Aquy loi";  
     const char string_7[SMSLENGTH] PROGMEM = "Mphat dien ap thap";  
@@ -594,7 +598,7 @@ int checkBuff(){
             EEPROM.write(46, myphone2[8]);
             EEPROM.write(48, myphone2[9]);
             phone2Exist = true;
-            smsControl = 12;
+            systemState = SYS_SMS_PHONE2_ADDED;
             strcpy(RxBuff, "");
             return 1;    
     }  
@@ -618,7 +622,7 @@ int checkBuff(){
             EEPROM.write(72, myphone3[8]);
             EEPROM.write(74, myphone3[9]);
             phone3Exist = true;
-            smsControl = 15;
+            systemState = SYS_SMS_PHONE3_ADDED;
             strcpy(RxBuff, "");
             return 1;    
     }
@@ -911,8 +915,51 @@ int checkBuff(){
                 }
                 break;
 
+            case SYS_SMS_PHONE2_ADDED_SENDING:                                                             //888888888888888888888888888888888888888888888888888888888888888888
+                if ((currentMillis - startCheckingTime) < SMS_INTERVAL) {
+                    outputInfor = strstr (RxBuff,"OK");
+                    if(outputInfor){    
+                        systemState = SYS_MQTT_CONNECT_AT; 
+                        networkError = 0; 
+                        startCheckingTime = 0; 
+                     }
+                     else{
+                        return 1; 
+                     }
+                }
+                else{
+                    systemState = SYS_SMS_PHONE2_ADDED;
+                    networkError++;
+                    if(networkError >= 2){
+                        Gsm_Init();  
+                        systemState = SYS_SMS_PHONE2_ADDED;
+                    }
+                    startCheckingTime = 0;
+                }
+                break;
 
-               
+            case SYS_SMS_PHONE3_ADDED_SENDING:                                                             //888888888888888888888888888888888888888888888888888888888888888888
+                if ((currentMillis - startCheckingTime) < SMS_INTERVAL) {
+                    outputInfor = strstr (RxBuff,"OK");
+                    if(outputInfor){    
+                        systemState = SYS_MQTT_CONNECT_AT; 
+                        networkError = 0; 
+                        startCheckingTime = 0; 
+                     }
+                     else{
+                        return 1; 
+                     }
+                }
+                else{
+                    systemState = SYS_SMS_PHONE3_ADDED;
+                    networkError++;
+                    if(networkError >= 2){
+                        Gsm_Init();  
+                        systemState = SYS_SMS_PHONE3_ADDED;
+                    }
+                    startCheckingTime = 0;
+                }
+                break;   
 
             default:
                 break;
@@ -1650,6 +1697,23 @@ void sendSmsTaskFunction(){
          GsmMakeSmsChar(msgChar);
          systemState = SYS_SMS_INFOR_OUT_SENDING;
          break;
+         
+     case SYS_SMS_PHONE2_ADDED:
+         startCheckingTime = 0;
+         startMqttCheckingTime = 0;
+         strcpy_P(msgChar, (char*)pgm_read_word(&(string_table[3])));        
+         GsmMakeSmsChar(msgChar);
+         systemState = SYS_SMS_PHONE2_ADDED_SENDING;
+         break;
+     
+     case SYS_SMS_PHONE3_ADDED:
+         startCheckingTime = 0;
+         startMqttCheckingTime = 0;
+         strcpy_P(msgChar, (char*)pgm_read_word(&(string_table[4])));        
+         GsmMakeSmsChar(msgChar);
+         systemState = SYS_SMS_PHONE2_ADDED_SENDING;
+         break;
+    
     default:
         break;
   }
@@ -1722,6 +1786,44 @@ int readROMData(){
     temp_L_Config = EEPROM.read(4);
     temp_H_Config = EEPROM.read(6);
     */
+
+    myphone2[0] = char(EEPROM.read(30)) ;
+    if(myphone2[0] == '0'){
+        myphone2[1] = char(EEPROM.read(32)) ;
+        myphone2[2] = char(EEPROM.read(34)) ;
+        myphone2[3] = char(EEPROM.read(36)) ;
+        myphone2[4] = char(EEPROM.read(38)) ;
+        myphone2[5] = char(EEPROM.read(40)) ;
+        myphone2[6] = char(EEPROM.read(42)) ;
+        myphone2[7] = char(EEPROM.read(44)) ;
+        myphone2[8] = char(EEPROM.read(46)) ;
+        myphone2[9] = char(EEPROM.read(48)) ;
+        phone2Exist = true;
+    }
+    else{
+        strcpy(myphone2, "");  
+        phone2Exist = false; 
+    }
+
+    myphone3[0] = char(EEPROM.read(56)) ;
+    if(myphone3[0] == '0'){
+        myphone3[1] = char(EEPROM.read(58)) ;
+        myphone3[2] = char(EEPROM.read(60)) ;
+        myphone3[3] = char(EEPROM.read(62)) ;
+        myphone3[4] = char(EEPROM.read(64)) ;
+        myphone3[5] = char(EEPROM.read(66)) ;
+        myphone3[6] = char(EEPROM.read(68)) ;
+        myphone3[7] = char(EEPROM.read(70)) ;
+        myphone3[8] = char(EEPROM.read(72)) ;
+        myphone3[9] = char(EEPROM.read(74)) ;
+        phone3Exist = true;
+    }
+    else{
+        strcpy(myphone3, "");  
+        phone3Exist = false; 
+    }
+
+    
     return 1;
 }
 
