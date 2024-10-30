@@ -106,6 +106,7 @@
 #define SMS_AC_IN             2
 #define SMS_IN_NONE           0
 #define SMS_IN_INFOR          1
+#define FRE_COUNT             10
 
 //#define DEBUG
 #define DEBUG_GSM
@@ -114,21 +115,23 @@
 #define SMS_WARNING
 #define WARN_AC
 #define WARN_ACQ
-#define WARN_DOOR
+//#define WARN_DOOR
 //#define WARN_TEMP
-#define MQTT_FUNCTION
+//#define MQTT_FUNCTION
 
-#define AUTHOR_TEST
+//#define AUTHOR_TEST
 #define ACCOUNT_ADMIN
 //#define ACCOUNT_CM1
 #define MQTT_STATE_ERROR
 
 
-#ifdef AUTHOR_TEST
+#ifdef ACCOUNT_ADMIN
 const String myphone="0945818332";
 #else
 const String myphone="0919861955";
 #endif
+
+//String phoneSet ="";
 
 char myphone2[11] = "";
 char myphone3[11] = "";
@@ -276,14 +279,9 @@ const char string_0[SMSLENGTH] PROGMEM = "START";
     const char string_1[SMSLENGTH] PROGMEM = "Canh bao. Mat dien luoi \n";
     const char string_2[SMSLENGTH] PROGMEM = "Vbat||Ddien||Tmp||AC \n" 
                                              "15.5||15.5||55.5||NOK||DOOR ----- \n";
-    const char string_3[SMSLENGTH] PROGMEM = "ADDED PHONE2 \n";
-    const char string_4[SMSLENGTH] PROGMEM = "ADDED PHONE3 \n";
-    const char string_5[SMSLENGTH] PROGMEM = "Tat MPhat NOK.Tg=xx.xxx";
-    const char string_6[SMSLENGTH] PROGMEM = "Aquy loi";  
-    const char string_7[SMSLENGTH] PROGMEM = "Mphat dien ap thap";  
-    const char string_8[SMSLENGTH] PROGMEM = "Mphat vi pham tan so";
-    const char string_9[SMSLENGTH] PROGMEM = "Mphat dien ap cao";  
-    const char* const string_table[] PROGMEM = {string_0, string_1, string_2, string_3, string_4, string_5, string_6, string_7, string_8, string_9};
+    const char string_3[SMSLENGTH] PROGMEM = "ADDED PHONE2 xxxxxxxxxx \n";
+    const char string_4[SMSLENGTH] PROGMEM = "ADDED PHONE3 xxxxxxxxxx \n"; 
+    const char* const string_table[] PROGMEM = {string_0, string_1, string_2, string_3, string_4};
 
 byte nump[] = {
  B11111100, // Zero
@@ -348,7 +346,8 @@ int calFre(){
     aa = 0;
     attachInterrupt(digitalPinToInterrupt(INPUT_MAIN_PULSE), ISR_HZ, RISING);     
     while(1){
-        if (pulsecount < 20){ 
+        //if (pulsecount < 20){ 
+        if (pulsecount < FRE_COUNT){ 
             aa++;
             delay_ms(500);
         }            
@@ -356,12 +355,14 @@ int calFre(){
             break;      
         }
          
-        if(aa == 20){
+        //if(aa == 20){
+        if(aa == FRE_COUNT){
             break;
         }
     }     
     detachInterrupt(digitalPinToInterrupt(INPUT_MAIN_PULSE));   
-    if(pulsecount > 15){
+    //if(pulsecount > 15){
+    if(pulsecount > FRE_COUNT){
          mainState = true;
     }
     else{
@@ -581,6 +582,7 @@ int checkBuff(){
     outputInfor = strstr (RxBuff,"PHONE22");
     if(outputInfor){   
             String phoneSet = String(outputInfor);    
+            //phoneSet = String(outputInfor);    
             String myphone2Char = phoneSet.substring(7,17);
             myphone2Char.trim();             
             delay_ms(5000);
@@ -928,11 +930,11 @@ int checkBuff(){
                      }
                 }
                 else{
-                    systemState = SYS_SMS_PHONE2_ADDED;
+                    //systemState = SYS_SMS_PHONE2_ADDED;
                     networkError++;
                     if(networkError >= 2){
                         Gsm_Init();  
-                        systemState = SYS_SMS_PHONE2_ADDED;
+                        //systemState = SYS_SMS_PHONE2_ADDED;
                     }
                     startCheckingTime = 0;
                 }
@@ -942,7 +944,7 @@ int checkBuff(){
                 if ((currentMillis - startCheckingTime) < SMS_INTERVAL) {
                     outputInfor = strstr (RxBuff,"OK");
                     if(outputInfor){    
-                        systemState = SYS_MQTT_CONNECT_AT; 
+                        //systemState = SYS_MQTT_CONNECT_AT; 
                         networkError = 0; 
                         startCheckingTime = 0; 
                      }
@@ -951,11 +953,11 @@ int checkBuff(){
                      }
                 }
                 else{
-                    systemState = SYS_SMS_PHONE3_ADDED;
+                    //systemState = SYS_SMS_PHONE3_ADDED;
                     networkError++;
                     if(networkError >= 2){
                         Gsm_Init();  
-                        systemState = SYS_SMS_PHONE3_ADDED;
+                        //systemState = SYS_SMS_PHONE3_ADDED;
                     }
                     startCheckingTime = 0;
                 }
@@ -1701,7 +1703,19 @@ void sendSmsTaskFunction(){
      case SYS_SMS_PHONE2_ADDED:
          startCheckingTime = 0;
          startMqttCheckingTime = 0;
-         strcpy_P(msgChar, (char*)pgm_read_word(&(string_table[3])));        
+         strcpy_P(msgChar, (char*)pgm_read_word(&(string_table[3]))); 
+         
+         msgChar[13] = myphone2[0]; 
+         msgChar[14] = myphone2[1]; 
+         msgChar[15] = myphone2[2]; 
+         msgChar[16] = myphone2[3]; 
+         msgChar[17] = myphone2[4]; 
+         msgChar[18] = myphone2[5]; 
+         msgChar[19] = myphone2[6]; 
+         msgChar[20] = myphone2[7]; 
+         msgChar[21] = myphone2[8]; 
+         msgChar[22] = myphone2[9]; 
+                
          GsmMakeSmsChar(msgChar);
          systemState = SYS_SMS_PHONE2_ADDED_SENDING;
          break;
@@ -1710,6 +1724,19 @@ void sendSmsTaskFunction(){
          startCheckingTime = 0;
          startMqttCheckingTime = 0;
          strcpy_P(msgChar, (char*)pgm_read_word(&(string_table[4])));        
+
+         msgChar[13] = myphone3[0]; 
+         msgChar[14] = myphone3[1]; 
+         msgChar[15] = myphone3[2]; 
+         msgChar[16] = myphone3[3]; 
+         msgChar[17] = myphone3[4]; 
+         msgChar[18] = myphone3[5]; 
+         msgChar[19] = myphone3[6]; 
+         msgChar[20] = myphone3[7]; 
+         msgChar[21] = myphone3[8]; 
+         msgChar[22] = myphone3[9]; 
+         
+         
          GsmMakeSmsChar(msgChar);
          systemState = SYS_SMS_PHONE2_ADDED_SENDING;
          break;
@@ -2255,7 +2282,7 @@ void setup() {
   pulsecount = 0;
   setupCount = 0;
 
-  #ifdef AUTHOR_TEST
+  #ifdef ACCOUNT_ADMIN
   vinaNetwork = false;
   #else
   vinaNetwork = true;
