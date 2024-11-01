@@ -120,8 +120,8 @@
 //#define MQTT_FUNCTION
 
 //#define AUTHOR_TEST
-#define ACCOUNT_ADMIN
-//#define ACCOUNT_CM1
+//#define ACCOUNT_ADMIN
+#define ACCOUNT_CM1
 #define MQTT_STATE_ERROR
 
 
@@ -138,13 +138,13 @@ char myphone3[11] = "";
 char RxBuff[256]= "";
 char atsName[10] = "ATS      ";
 char msgChar[SMSLENGTH] = "";
-unsigned long duration, previous, now, currentMillis, previousMillis, startCheckingTime;
-float nhot_out, workingTimeHourFloat, volCurrent, frequency, vAcquy, factorInM, factorInG, factorAcq;
+unsigned long now, currentMillis, startCheckingTime;
+float factorInM, factorInG, factorAcq;
 boolean mainState, mainStateLast, acqState, acqStateLast, doorState, doorStateLast, tempState, tempStateLast, loadState;
 boolean phone2Exist, phone3Exist;
 char smsControl;
 String atsTkStr = "";
-boolean  checkingTk, inputTk, warningFlag;
+boolean  checkingTk, inputTk;
 float tempValue = 589.8;
 float acqValue = 12.5;
 float currentValue = 5.5;
@@ -153,7 +153,6 @@ float vThConfig;
 float temp_L_Config, temp_H_Config, vAcq_L_Config, vAcq_H_Config;
 boolean configVoltage;
 char setUpState;
-char smsWarning;
 
 //////////////////////////////////////////////////////////////////////////////////////////////MQTT///////////////////////////////////////////////////////////////////////////////////////////////
 #define TIME_UPLOAD_SECOND                  10
@@ -193,17 +192,15 @@ char smsWarning;
  
 
 volatile int systemState;
-int mqttConnectRetryNumber, mqttUploadRetryNumber;
+int mqttUploadRetryNumber;
 float i1, i2, i3, v1, v2, v3, p1, p2, p3;
-volatile boolean enableSendingChecking, sendingOk, checkingGsm, masterDetectWarning, mqttUploadEnable, mqttSetupStatus, mqttSetupChecking, mqttUploadStatus, mqttUploadChecking, mqttConnect1Status, mqttUpload1Status;
+volatile boolean mqttUploadStatus, mqttUploadChecking;
 
 bool vinaNetwork, itelNetwork;
 
-unsigned long currentTime, lastSendingTime, start2Running, end2Running, lastUploadTime, startMqttCheckingTime;
+unsigned long currentTime, lastUploadTime, startMqttCheckingTime;
 
-boolean uploadTimeCheck;
-
-int count_a, count_b, setupCount;
+int setupCount;
 
 static int networkError = 0;
 
@@ -211,10 +208,12 @@ byte connectPacket[ 19 ] =
 {
   0x10, 0x11, 0x00, 0x04, 0x4D, 0x51, 0x54, 0x54, 0x04, 0x02, 0x00, 0x3C, 0x00, 0x05, 0x54, 0x32, 0x54, 0x49, 0x44
 };
+/*
 byte connectPacketPass[ 28 ] =
 {
   0x10, 0x1A, 0x00, 0x04, 0x4D, 0x51, 0x54, 0x54, 0x04, 0xC2, 0x00, 0x3C, 0x00, 0x08, 0x6E, 0x68, 0x61, 0x74, 0x6E, 0x68, 0x61, 0x74, 0x31, 0x35, 0x39, 0x31, 0x32, 0x33
 };
+*/
 /*
   byte publishPacket[ 26 ] =
   {
@@ -222,6 +221,7 @@ byte connectPacketPass[ 28 ] =
 
   };
 */
+/*
 byte publishPacket[ 14 ] =
 {
   0x30, 0x0C, 0x00, 0x07, 0x73, 0x65, 0x6E, 0x73, 0x6F, 0x72, 0x73, 0x4F, 0x46, 0x46
@@ -233,18 +233,7 @@ byte publishPacketSensor[ 15 ] =
   0x30, 0x0D, 0x00, 0x07, 0x73, 0x65, 0x6E, 0x73, 0x6F, 0x72, 0x73, 0x37, 0x38, 0x2E, 0x35
 
 };
-
-byte publishPacketI1[ 10] =
-{
-  0x30, 0x08, 0x00, 0x02, 0x69, 0x31, 0x37, 0x38, 0x2E, 0x35
-
-};
-
-byte publishPacket_IUU[ 41] =
-{
-  0x30, 0x27, 0x00, 0x07, 0x73, 0x65, 0x6E, 0x73, 0x6F, 0x72, 0x73, 0x30, 0x30, 0x2E, 0x30, 0x30, 0x31, 0x31, 0x2E, 0x31, 0x31, 0x32, 0x32, 0x2E, 0x32, 0x32, 0x33, 0x33, 0x2E, 0x33, 0x33, 0x34, 0x34, 0x2E, 0x34, 0x34, 0x35, 0x35, 0x2E, 0x35, 0x35
-};   ////// 0x27 + 2
-
+*/
 /*
 byte publishPacket_IU[ 46] =
 {
@@ -265,15 +254,10 @@ byte publishPacket_IU[ 56] =
 };
 #endif
 
-byte subPacketSensor[ 14 ] =
-{
-  0x82, 0x0C, 0x00, 0x01, 0x00, 0x07, 0x73, 0x65, 0x6E, 0x73, 0x6F, 0x72, 0x73, 0x00
-
-};
 ///////////////////////////////////////////////////////////////////////////////////////////////MQTT///////////////////////////////////////////////////////////////////////////////////////////////
 
 int pulsecount;
-unsigned long durationAc, nowAc, previousAc;
+unsigned long nowAc, previousAc;
 
 const char string_0[SMSLENGTH] PROGMEM = "START";
     const char string_1[SMSLENGTH] PROGMEM = "Canh bao. Mat dien luoi \n";
@@ -1020,11 +1004,10 @@ void activeLed4(void){
 
 
 void displayLed7(float dataIn, int type){
- int led_100;
- int led_10;
- int led_1;
- int led_dot;
- float unitIn;
+ int led_100 = 0;
+ int led_10 = 0;
+ int led_1 = 0;
+ int led_dot = 0;
 
  //led_100 = dataIn/100;
  //led_10 = (dataIn - (led_100*100))/10;
@@ -1428,7 +1411,7 @@ void outSigControl(){
 }
 
 int checkInputButtons(){   
-    char acq_H_value, acq_L_value, temp_H_value, temp_L_value;
+    //char acq_H_value, acq_L_value, temp_H_value, temp_L_value;
 
     if(digitalRead(MENU_BUTTON)==LOW){
         for(int i = 0; i < LED7_CONFIG_BEGIN; i++){
@@ -1900,7 +1883,6 @@ void updateSensorPacket(){
   }
   byte buffer_i1_1[i1_Str_1.length() + 1];
   byte buffer_i1_2[i1_Str_2.length() + 1];
-  byte buffer_i1_3[i1_Str_3.length() + 1];
   byte buffer_i1_4[i1_Str_4.length() + 1];
   byte buffer_i1_5[i1_Str_5.length() + 1];
 
@@ -1931,7 +1913,6 @@ void updateSensorPacket(){
   }
   byte buffer_i2_1[i2_Str_1.length() + 1];
   byte buffer_i2_2[i2_Str_2.length() + 1];
-  byte buffer_i2_3[i2_Str_3.length() + 1];
   byte buffer_i2_4[i2_Str_4.length() + 1];
   byte buffer_i2_5[i2_Str_5.length() + 1];
 
@@ -1962,7 +1943,6 @@ void updateSensorPacket(){
   }
   byte buffer_i3_1[i3_Str_1.length() + 1];
   byte buffer_i3_2[i3_Str_2.length() + 1];
-  byte buffer_i3_3[i3_Str_3.length() + 1];
   byte buffer_i3_4[i3_Str_4.length() + 1];
   byte buffer_i3_5[i3_Str_5.length() + 1];
 
@@ -1993,7 +1973,6 @@ void updateSensorPacket(){
   }
   byte buffer_v1_1[v1_Str_1.length() + 1];
   byte buffer_v1_2[v1_Str_2.length() + 1];
-  byte buffer_v1_3[v1_Str_3.length() + 1];
   byte buffer_v1_4[v1_Str_4.length() + 1];
   byte buffer_v1_5[v1_Str_5.length() + 1];
 
@@ -2019,13 +1998,11 @@ void updateSensorPacket(){
   if(v2 >= 10.00){
       v2_Str_1 =  String(v2_Str[0]);
       v2_Str_2 =  String(v2_Str[1]);
-      v2_Str_3 =  String(v2_Str[2]);
       v2_Str_4 =  String(v2_Str[3]);
       v2_Str_5 =  String(v2_Str[4]);
   }
   byte buffer_v2_1[v2_Str_1.length() + 1];
   byte buffer_v2_2[v2_Str_2.length() + 1];
-  byte buffer_v2_3[v2_Str_3.length() + 1];
   byte buffer_v2_4[v2_Str_4.length() + 1];
   byte buffer_v2_5[v2_Str_5.length() + 1];
 
@@ -2057,7 +2034,6 @@ void updateSensorPacket(){
   }
   byte buffer_v3_1[v3_Str_1.length() + 1];
   byte buffer_v3_2[v3_Str_2.length() + 1];
-  byte buffer_v3_3[v3_Str_3.length() + 1];
   byte buffer_v3_4[v3_Str_4.length() + 1];
   byte buffer_v3_5[v3_Str_5.length() + 1];
 
@@ -2236,7 +2212,6 @@ int mqttUploadTaskFunction( ) {
           digitalWrite(OUTPUT_SIG, SIG_ACTIVE);
           #endif
           currentTime = millis(); 
-          unsigned long uploadInterval;
           if((currentTime - lastUploadTime) >= 600000) {
               #ifdef DEBUG 
               digitalWrite(OUTPUT_RELAY, RELAY_DEACTIVE);
@@ -2290,7 +2265,6 @@ void setup() {
   
   phone2Exist = false, phone3Exist = false;    
   setUpState = SETUP_NONE;
-  smsWarning = SMS_NONE;
   systemState = SYS_MQTT_CONNECT_AT;
   
   configIO();
